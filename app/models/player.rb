@@ -24,20 +24,20 @@ class Player < ActiveRecord::Base
 	  players = []
 	  players_missing_ids = []
 	  results = []
-      CSV.foreach(file_with_path, {headers: true, header_converters: :rename_headers, converters: :all, skip_blanks: true}) do |player|
-	      logger.debug("adding user- #{player.inspect}")
-	      if player['player_ref_id'].present?
-	      	players << player.to_hash
-	      else
-	      	players_missing_ids << player.to_hash
-	      end
-	      #let's batch them up 
-	      if players.count == batch_size
-	      	ActiveRecord::Base.transaction do
-	      		results << Player.create(players)
-	      		players = []
-	      	end
-	      end
+	  CSV.foreach(file_with_path, {headers: true, header_converters: :rename_headers, converters: :all, skip_blanks: true}) do |player|
+       logger.debug("adding user- #{player.inspect}")
+       if player['player_ref_id'].present?
+      	players << player.to_hash
+       else
+      	players_missing_ids << player.to_hash
+       end
+       #let's batch them up 
+       if players.count == batch_size
+      	ActiveRecord::Base.transaction do
+      		results << Player.create(players)
+      		players = []
+      	end
+       end
 	  end
 	  #create the last batch
 	  if players.present?
