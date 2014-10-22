@@ -32,6 +32,15 @@ namespace :baseball do
 
 		 player = Player.triple_crown_winner("NL", 2012)
 		 player.present? ? puts("   NL     2012     #{player.first_name} #{player.last_name}") : puts("   NL     2012     No winner")
-
 	end
+
+	desc "This task loads data to database: usage rake baseball:load[<file_name_with_path>,<model name>]"
+	task :load, [:file_with_path, :model] => :environment do |task, args|
+		raise "missing parameters. USAGE: rake baseball:load[<file_with_path>,<model name>]" unless args[:file_with_path] && args[:model]
+		#raise "model #{args[:model]} not found" unless Object.const_defined?(args[:model].to_s)
+		clazz = args[:model].constantize
+		raise "data load is not supported yet for model #{args[:model]}" unless clazz and clazz.respond_to?(:import)
+		clazz.import(args[:file_with_path])
+	end
+
 end

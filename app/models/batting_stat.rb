@@ -38,7 +38,7 @@ class BattingStat < ActiveRecord::Base
 		when 'SB'
 			'sb'
 		else
-			raise Error, "unknow column name- #{field}"
+			raise "unknow column name- #{field}"
 		end
 	  end
 	  stats = []
@@ -54,12 +54,6 @@ class BattingStat < ActiveRecord::Base
 	      	stat['hits'] = 0 if stat['hits'].nil?
 	      	stat['hr']   = 0 if stat['hr'].nil?
 	      	stat['at_bats'] = 0 if stat['at_bats'].nil?
-=begin
-	      	# add calculated fields- slugging percentage and batting average
-	      	stat['batting_avg'] = stat['hits'].to_f / stat['at_bats'] if stat['at_bats'] > 0
-	      	slug = (stat['hits'] - stat['doubles'] - stat['triples']) + (2 * stat['doubles']) + (3 * stat['triples']) + (4 * stat['hr']) 
-	      	stat['slug'] = slug.to_f / stat['at_bats'] if stat['at_bats'] > 0
-=end
 	      	stats << stat
 	      else
 	      	stats_missing_ids << stat
