@@ -1,6 +1,6 @@
 namespace :baseball do
    
-  desc "This task prints out answers to 3 qusestions in the exercise!"
+  desc "This task prints out answers to some example baseball stat questions"
   task :stats => :environment do
      puts "Q.1> Who has the most improved batting average( hits / at-bats) from 2009 to 2010? (Only include players with at least 200 at-bats)"
 

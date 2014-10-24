@@ -1,80 +1,37 @@
 require 'csv'
 
 class BattingStat < ActiveRecord::Base
+   include CsvImportable
 
    belongs_to :player, foreign_key: :player_ref_id, primary_key: :player_ref_id, inverse_of: :batting_stats
 
    before_create :set_derived_stats
 
-   def self.import(file_with_path, batch_size=1000)
-     CSV::HeaderConverters[:rename_headers] = lambda do |field|
-      case field
-      when 'playerID'
-         'player_ref_id'
-      when 'yearID'
-         'year'
-      when 'league'
-         'league'
-      when 'teamID'
-         'team_id'
-      when 'G'
-         'games'
-      when 'AB'
-         'at_bats'
-      when 'R'
-         'runs'
-      when 'H'
-         'hits'
-      when '2B'
-         'doubles'
-      when '3B'
-         'triples'
-      when 'HR'
-         'hr'
-      when 'RBI'
-         'rbi'
-      when 'CS'
-         'cs'
-      when 'SB'
-         'sb'
-      else
-         raise "unknow column name- #{field}"
-      end
-     end
-     stats = []
-     stats_missing_ids = []
-     results = []
-      CSV.foreach(file_with_path, {headers: true, row_sep: :auto, header_converters: :rename_headers, converters: :all, skip_blanks: true}) do |stat|
-         logger.debug("adding a stat- #{stat.inspect}")
-         stat = stat.to_hash
-         if stat['player_ref_id'].present?
-            # set the values to 0 if not provided to help with the calculations
-            stat['doubles'] = 0 if stat['doubles'].nil?
-            stat['triples'] = 0 if stat['triples'].nil?
-            stat['hits'] = 0 if stat['hits'].nil?
-            stat['hr']   = 0 if stat['hr'].nil?
-            stat['at_bats'] = 0 if stat['at_bats'].nil?
-            stats << stat
-         else
-            stats_missing_ids << stat
-         end
-         #let's batch them up 
-         if stats.count == batch_size
-            ActiveRecord::Base.transaction do
-               results << BattingStat.create(stats)
-               stats = []
-            end
-         end
-     end
-     #create the last batch
-     if stats.present?
-      ActiveRecord::Base.transaction do
-         results << BattingStat
-         .create(stats)
-      end
-     end
-     logger.info("#{results.flatten.count} stats added.")
-     logger.error("could not process #{stats_missing_ids.count} records for missing player id.")
+   def self.valid_record?(player)
+      player['player_ref_id'].present?
+   end
+
+   def self.record_new?(stat)
+      !BattingStat.where("player_ref_id = ?", stat['player_ref_id']).first.present?
+   end
+
+   def self.headers_map
+      {
+         'playerID' => 'player_ref_id',
+         'yearID'   => 'year',
+         'league'   => 'league',
+         'teamID'   => 'team_id',
+         'G'        => 'games',
+         'AB'       => 'at_bats',
+         'R'        => 'runs',
+         'H'        => 'hits',
+         '2B'       => 'doubles',
+         '3B'       => 'triples',
+         'HR'       => 'hr',
+         'RBI'      => 'rbi',
+         'CS'       => 'cs',
+         'SB'       => 'sb'
+      }
    end
 
    def self.max_batting_average(league, year, minimum_at_bats=200)
@@ -127,9 +84,14 @@ class BattingStat < ActiveRecord::Base
     private
 
     def set_derived_stats
+      self.doubles ||= 0 
+      self.triples ||= 0 
+      self.hits ||= 0 
+      self.hr ||= 0
+      self.at_bats ||= 0
       self.batting_avg = self.hits.to_f / self.at_bats if self.at_bats > 0
-        slug_total = (hits - doubles - triples) + (2 * doubles) + (3 * triples) + (4 * hr) 
-       self.slug = slug_total.to_f / at_bats if at_bats > 0
+      slug_total = (hits - doubles - triples) + (2 * doubles) + (3 * triples) + (4 * hr) 
+      self.slug = slug_total.to_f / at_bats if at_bats > 0
    end
 
 end

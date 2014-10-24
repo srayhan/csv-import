@@ -1,52 +1,27 @@
-require 'csv'
+
 
 class Player < ActiveRecord::Base
+   include CsvImportable
 
    has_many :batting_stats, foreign_key: :player_ref_id, primary_key: :player_ref_id, inverse_of: :player, dependent: :destroy
 
    validates :player_ref_id, uniqueness: true
 
-   def self.import(file_with_path, batch_size=100)
-     CSV::HeaderConverters[:rename_headers] = lambda do |field|
-      case field
-      when 'playerID'
-         'player_ref_id'
-      when 'birthYear'
-         'birth_year'
-      when 'nameFirst'
-         'first_name'
-      when 'nameLast'
-         'last_name'
-      else
-         raise Error, "unknow column name- #{name}"
-      end
-     end
-     players = []
-     players_missing_ids = []
-     results = []
-     CSV.foreach(file_with_path, {headers: true, header_converters: :rename_headers, converters: :all, skip_blanks: true}) do |player|
-       logger.debug("adding user- #{player.inspect}")
-       if player['player_ref_id'].present?
-         players << player.to_hash
-       else
-         players_missing_ids << player.to_hash
-       end
-       #let's batch them up 
-       if players.count == batch_size
-         ActiveRecord::Base.transaction do
-            results << Player.create(players)
-            players = []
-         end
-       end
-     end
-     #create the last batch
-     if players.present?
-      ActiveRecord::Base.transaction do
-         results << Player.create(players)
-      end
-     end
-     logger.info("#{results.flatten.count} players added.")
-     logger.error("could not process #{players_missing_ids.count} records for missing player id.")
+   def self.valid_record?(player)
+      player['player_ref_id'].present?
+   end
+
+   def self.record_new?(player)
+      !Player.where("player_ref_id = ?", player['player_ref_id']).first.present?
+   end
+
+   def self.headers_map
+      {
+         'playerID' => 'player_ref_id',
+         'birthYear' => 'birth_year',
+         'nameFirst' => 'first_name',
+         'nameLast' => 'last_name'
+      }
    end
 
    # Triple crown winner – The player that had the highest batting average AND the most home runs AND the most RBI in their league.
