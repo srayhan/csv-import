@@ -2,13 +2,13 @@ CsvImportable
 =============
 
 
-### Description
+## Description ##
 
 This app showcases the use of Rails Concern in implementing a generic data import from CSV files using Ruby CSV library. The CsvImportable uses Template Method design pattern. 
 
 To make model support data import from a CSV file, just include CsvImportable.
 
-#### It has 3 overridable template methods- 
+### It has 3 overridable template methods ###
 
 1. headers_map: Models should implement this if csv column headers are different from db column headers. It retuns a hash of csv column headers (key) to db column headers (value)
 
@@ -18,7 +18,7 @@ To make model support data import from a CSV file, just include CsvImportable.
 
 Feel free to use it in any way you see fit. Have any suggestions to expand or improve, please let me know.
 
-### Some ideas for future enhancement:
+### Some ideas for future enhancement ###
 
 1. Use of smart-csv to support more efficient bulk upload.
 
@@ -26,6 +26,6 @@ Feel free to use it in any way you see fit. Have any suggestions to expand or im
 
 3. Addition of a pre and post process hooks 
 
-### Setup instruction
+#### Setup instruction ####
 
 To setup the app, run rake db:setup
