@@ -14,13 +14,12 @@ module CsvImportable
 
       module ClassMethods
 
-         def import(file_with_path, batch_size=100)
+         def import_from_csv(file_with_path, batch_size=100)
            CSV::HeaderConverters[:rename_headers] = lambda do |field|
                mapped_header = headers_map[field]
-               raise "unknow column name- #{name}" unless mapped_header
+               raise "unknown column name- #{field}" unless mapped_header
                mapped_header
            end if headers_map.present?
-
 
            items_new = []
            items_to_update = []
@@ -31,7 +30,7 @@ module CsvImportable
              logger.debug("#{item}")
              if valid_record?(item)
                if record_new?(row)
-                  items_new << item
+                  items_new << new(item)
                else
                   items_to_update << item
                end
@@ -42,7 +41,7 @@ module CsvImportable
              if items_new.count == batch_size
                logger.debug("creating #{items_new.inspect}")
                ActiveRecord::Base.transaction do
-                  results << create(items_new)
+                  results << import(items_new)
                   items_new = []
                end
              end
@@ -50,8 +49,9 @@ module CsvImportable
            #create the last batch
            #if items.present?
             ActiveRecord::Base.transaction do
-               results << create(items_new) if items_new.present?
-               items_new = []
+              logger.debug("creating #{items_new.inspect}")
+              results << import(items_new) if items_new.present?
+              items_new = []
             end
            #end
            {created: results.flatten, invalid: items_invalid,  items_to_update: items_to_update}
